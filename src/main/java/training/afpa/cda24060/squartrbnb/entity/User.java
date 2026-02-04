@@ -33,6 +33,7 @@ public class User {
     private String email;
 
     @Column(name = "date_naissance", nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dateNaissance;
 
     @Column(name = "photo_path")
