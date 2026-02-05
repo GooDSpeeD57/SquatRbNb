@@ -52,8 +52,8 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
-      - name: Run unit tests
-        run: mvn test -DskipITs=true
+      - name: Run unit tests with coverage
+        run: mvn clean test
 
       - name: Wait for MySQL
         run: |
@@ -73,6 +73,7 @@ jobs:
           -Dsonar.organization=goodspeed57 
           -Dsonar.login=${{ secrets.SONAR_TOKEN }} 
           -Dsonar.branch.name=${{ github.ref_name }}
+          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 
       - name: Build project
         run: mvn clean package -DskipTests
@@ -90,3 +91,8 @@ jobs:
         with:
           github-token: ${{ github.token }}
           webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+-Dsonar:
+  coverage:
+    jacoco:
+      xmlReportPaths=target/site/jacoco/jacoco:
+        xml:
