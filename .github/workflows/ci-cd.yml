@@ -63,13 +63,15 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
           -Dsonar.projectKey=GooDSpeeD57_SquatRbNb \
-          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+          -Dsonar.organization=goodspeed57 \
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
+          -Dsonar.branch.name=${{ github.ref_name }}
 
       - name: Build project
         run: mvn clean package -DskipTests
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4  # <-- Modification ici : passage de v3 à v4
+        uses: actions/upload-artifact@v4
         with:
           name: squartrbnb-jar
           path: target/*.jar
