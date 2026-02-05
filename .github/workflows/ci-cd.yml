@@ -55,6 +55,12 @@ jobs:
       - name: Run unit tests
         run: mvn test -DskipITs=true
 
+      - name: Wait for MySQL
+        run: |
+          curl -O https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh
+          chmod +x wait-for-it.sh
+          ./wait-for-it.sh localhost:3306 --timeout=60 --strict -- echo "MySQL est prêt"
+
       - name: Run integration tests
         run: mvn verify -DskipTests=false
 
@@ -74,5 +80,16 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: squartrbnb-jar
+          name: squartrbnb.jar
           path: target/*.jar
+          retention-days: 1
+
+      - name: Notify Teams
+        if: always()
+        uses: fjogeleit/http-request-action@v1
+        with:
+           url: ${{ secrets.MS_TEAM_HOOK }}
+           method: POST
+           contentType: 'application/json'
+           body: '{"title":"CI/CD SquArtRbNb","text":"Le workflow **${{ github.workflow }}** sur la branche **${{ github.ref_name }}** est terminé.\nStatut : ${{ job.status }}."}'
+
