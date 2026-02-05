@@ -61,10 +61,11 @@ jobs:
       - name: SonarCloud Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify sonar:sonar \
-          -Dsonar.projectKey=GooDSpeeD57_SquatRbNb \
-          -Dsonar.organization=goodspeed57 \
-          -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
+        run: mvn 
+          -B sonar:sonar 
+          -Dsonar.projectKey=GooDSpeeD57_SquatRbNb 
+          -Dsonar.organization=goodspeed57 
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }} 
           -Dsonar.branch.name=${{ github.ref_name }}
 
       - name: Build project
