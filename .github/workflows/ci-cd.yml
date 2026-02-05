@@ -84,12 +84,9 @@ jobs:
           path: target/*.jar
           retention-days: 1
 
-      - name: Notify Teams
+      - name: Notify Teams (template)
         if: always()
-        uses: fjogeleit/http-request-action@v1
+        uses: dchourasia/ms-teams-notification@1.0
         with:
-          url: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
-          method: POST
-          contentType: application/json
-          data: '{"title":"CI/CD SquArtRbNb","text":"Le workflow **${{ github.workflow }}** sur la branche **${{ github.ref_name }}** est terminé.\nStatut : ${{ job.status }}."}'
-
+          github-token: ${{ github.token }}
+          webhook-uri: ${{ secrets.MS_TEAM_HOOK }}
