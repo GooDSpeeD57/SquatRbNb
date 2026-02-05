@@ -88,8 +88,8 @@ jobs:
         if: always()
         uses: fjogeleit/http-request-action@v1
         with:
-           url: ${{ secrets.MS_TEAM_HOOK }}
-           method: POST
-           contentType: 'application/json'
-           body: '{"title":"CI/CD SquArtRbNb","text":"Le workflow **${{ github.workflow }}** sur la branche **${{ github.ref_name }}** est terminé.\nStatut : ${{ job.status }}."}'
+          url: ${{ secrets.MS_TEAM_HOOK }}
+          method: POST
+          contentType: application/json
+          data: '{"title":"CI/CD SquArtRbNb","text":"Le workflow **${{ github.workflow }}** sur la branche **${{ github.ref_name }}** est terminé.\nStatut : ${{ job.status }}."}'
 
