@@ -1,4 +1,4 @@
-name: CI/CD Spring Boot Maven
+name: CI/CD Spring Boot Maven (Split en jobs)
 
 on:
   push:
@@ -8,11 +8,34 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build:
+  # Job 1 : Build du projet + tests unitaires
+  build_and_unit_tests:
     runs-on: ubuntu-latest
-    env:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Nécessaire pour SonarCloud
 
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'zulu'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Run unit tests with coverage
+        run: mvn clean test  # Génère les rapports de couverture
+
+  # Job 2 : Tests d'intégration (nécessite MySQL)
+  integration_tests:
+    needs: build_and_unit_tests  # Dépend du job précédent
+    runs-on: ubuntu-latest
     services:
       mysql:
         image: mysql:8.0
@@ -26,6 +49,41 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'zulu'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Wait for MySQL
+        run: |
+          curl -O https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh
+          chmod +x wait-for-it.sh
+          ./wait-for-it.sh localhost:3306 --timeout=60 --strict -- echo "MySQL est prêt"
+
+      - name: Create Database From Script
+        run: mysql -h 127.0.0.1 -u root -p${{ secrets.MYSQL_ROOT_PASSWORD }} ${{ secrets.MYSQL_DATABASE }} < src/test/resources/Dump.sql
+
+      - name: Run integration tests
+        run: mvn verify -DskipTests=false  # Exécute uniquement les tests d'intégration
+
+  # Job 3 : Analyse SonarCloud + packaging final + upload de l'artifact
+  sonar_and_artifact:
+    needs: integration_tests  # Dépend des tests d'intégration
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
     steps:
       - uses: actions/checkout@v4
@@ -52,45 +110,33 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
-      - name: Run unit tests with coverage
-        run: mvn clean test
-
-      - name: Wait for MySQL
-        run: |
-          curl -O https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh
-          chmod +x wait-for-it.sh
-          ./wait-for-it.sh localhost:3306 --timeout=60 --strict -- echo "MySQL est prêt"
-
-      - name: Create Database From Script
-        run: mysql -h 127.0.0.1 -u root -p${{ secrets.MYSQL_ROOT_PASSWORD }} ${{ secrets.MYSQL_DATABASE }} < src/test/resources/Dump.sql
-
-      - name: Run integration tests
-        run: mvn verify -DskipTests=false
-
       - name: SonarCloud Scan
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn 
-          -B sonar:sonar 
-          -Dsonar.projectKey=GooDSpeeD57_SquatRbNb 
-          -Dsonar.organization=goodspeed57 
-          -Dsonar.login=${{ secrets.SONAR_TOKEN }} 
+        run: mvn -B sonar:sonar
+          -Dsonar.projectKey=GooDSpeeD57_SquatRbNb
+          -Dsonar.organization=goodspeed57
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
           -Dsonar.branch.name=${{ github.ref_name }}
           -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 
-      - name: Build project
-        run: mvn clean package -DskipTests
+      - name: Build final package
+        run: mvn clean package -DskipTests  # Pas besoin de relancer les tests
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: squartrbnb.jar
+          name: squartrbnb.jar  # Nom conservé tel quel
           path: target/*.jar
           retention-days: 1
 
-      - name: Notify Teams (template)
-        if: always()
-        uses: dchourasia/ms-teams-notification@1.0
-        with:
-          github-token: ${{ github.token }}
-          webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+  # Job 4 : Notification (s'exécute toujours, même en cas d'échec)
+  notify:
+    needs: [build_and_unit_tests, integration_tests, sonar_and_artifact]
+    if: always()  # S'exécute toujours
+    runs-on: ubuntu-latest
+    steps:
+    - name: Notify Teams
+      uses: dchourasia/ms-teams-notification@1.0
+      with:
+        github-token: ${{ github.token }}
+        webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+        status: ${{ contains(needs.*.result, 'failure') && 'failure' || 'success' }}  # Statut global

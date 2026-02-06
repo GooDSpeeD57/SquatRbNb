@@ -107,13 +107,11 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.10</version>
                 <executions>
-                    <!-- Préparer l'agent avant les tests -->
                     <execution>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
-                    <!-- Générer le rapport après les tests -->
                     <execution>
                         <id>report</id>
                         <phase>test</phase>
