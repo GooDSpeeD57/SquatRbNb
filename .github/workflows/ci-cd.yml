@@ -162,4 +162,3 @@ jobs:
         with:
           github-token: ${{ github.token }}
           webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
-          status: ${{ contains(needs.*.result, 'failure') && 'failure' || 'success' }}
