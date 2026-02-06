@@ -137,7 +137,7 @@ jobs:
           -Dsonar.login=${{ secrets.SONAR_TOKEN }}
           -Dsonar.branch.name=${{ github.ref_name }}
           -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-
+          -Dsonar.java.binaries=target/classes
       - name: Build final package
         run: mvn clean package -DskipTests
 
