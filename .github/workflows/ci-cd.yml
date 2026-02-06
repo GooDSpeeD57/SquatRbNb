@@ -2,9 +2,9 @@ name: CI/CD Spring Boot Maven (Split minimal)
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
     types: [opened, synchronize, reopened]
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: 21
-          distribution: 'zulu'
+          distribution: temurin
 
       - name: Cache Maven packages
         uses: actions/cache@v4
@@ -78,7 +78,14 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: 21
-          distribution: 'zulu'
+          distribution: temurin
+
+      - name: Cache SonarQube packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
 
       - name: Cache Maven packages
         uses: actions/cache@v4
@@ -114,7 +121,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: 21
-          distribution: 'zulu'
+          distribution: temurin
 
       - name: Cache SonarQube packages
         uses: actions/cache@v4
@@ -147,7 +154,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: squartrbnb.jar
+          name: squatrbnb.jar
           path: target/*.jar
           retention-days: 1
 
