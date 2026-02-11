@@ -191,4 +191,4 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USER }}/apispringboot:latest
+          tags: ${{ secrets.DOCKERHUB_USER }}/apispringboottest:latest
