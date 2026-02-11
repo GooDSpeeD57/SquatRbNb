@@ -8,12 +8,12 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  # Job 1 : Build + tests unitaires (avec MySQL)
+
   build_and_unit_tests:
     runs-on: ubuntu-latest
     services:
       mysql:
-        image: mysql:8.0
+        image: mysql:8.1
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
           MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
@@ -54,13 +54,12 @@ jobs:
       - name: Run unit tests with coverage
         run: mvn clean test
 
-  # Job 2 : Tests d'intégration (avec MySQL)
   integration_tests:
     needs: build_and_unit_tests
     runs-on: ubuntu-latest
     services:
       mysql:
-        image: mysql:8.0
+        image: mysql:8.1
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
           MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
@@ -106,7 +105,6 @@ jobs:
       - name: Run integration tests
         run: mvn verify -DskipTests=false
 
-  # Job 3 : SonarCloud + packaging + artifact
   sonar_and_artifact:
     needs: integration_tests
     runs-on: ubuntu-latest
@@ -154,11 +152,10 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: squatrbnb.jar
+          name: api.jar
           path: target/*.jar
           retention-days: 1
 
-  # Job 4 : Notification (toujours exécuté)
   notify:
     needs: [build_and_unit_tests, integration_tests, sonar_and_artifact]
     if: always()
@@ -169,3 +166,29 @@ jobs:
         with:
           github-token: ${{ github.token }}
           webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+
+
+  docker-build-image-api:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    needs:
+      - sonar_and_artifact
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: api.jar
+
+      - name: Connect to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USER }}/apispringboot:latest
