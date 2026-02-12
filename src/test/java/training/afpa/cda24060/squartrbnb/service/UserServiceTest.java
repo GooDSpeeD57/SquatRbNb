@@ -1,5 +1,8 @@
 package training.afpa.cda24060.squartrbnb.service;
 
+import io.qameta.allure.*;
+import jdk.jfr.Description;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,6 +21,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+@Epic("Gestion des utilisateurs")
+@Feature("Service UserService")
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
@@ -34,8 +39,13 @@ class UserServiceTest {
     UserService userService;
 
     @Test
+    @Story("Création d'un utilisateur")
+    @Severity(SeverityLevel.CRITICAL)
+    @Description("Vérifie qu'un utilisateur est sauvegardé avec mot de passe encodé et rôle par défaut")
+    @Owner("Equipe Backend")
+    @DisplayName("Sauvegarde utilisateur avec password encodé et rôle UTILISATEUR")
     void shouldSaveUserWithEncodedPasswordAndDefaultRole() {
-        // GIVEN
+
         Role role = new Role(1, "UTILISATEUR", null);
 
         User user = new User();
@@ -56,10 +66,8 @@ class UserServiceTest {
         when(userRepository.save(any(User.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        // WHEN
         User savedUser = userService.saveUser(user);
 
-        // THEN
         assertEquals("hashedPassword", savedUser.getPassword());
         assertEquals("UTILISATEUR", savedUser.getRole().getName());
         assertEquals("jdoe", savedUser.getUsername());
@@ -68,42 +76,50 @@ class UserServiceTest {
     }
 
     @Test
+    @Story("Validation des données utilisateur")
+    @Severity(SeverityLevel.BLOCKER)
+    @Description("Vérifie qu'une exception est levée si le mot de passe est absent")
+    @DisplayName("Exception si mot de passe manquant")
     void shouldThrowExceptionWhenPasswordIsMissing() {
-        // GIVEN
+
         User user = new User();
         user.setPassword(null);
 
-        // WHEN / THEN
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> userService.saveUser(user)
         );
 
         assertEquals("Le mot de passe est obligatoire", exception.getMessage());
-
         verify(userRepository, never()).save(any());
     }
 
     @Test
+    @Story("Consultation utilisateur")
+    @Severity(SeverityLevel.NORMAL)
+    @Description("Retourne un utilisateur existant par son ID")
+    @DisplayName("Récupération utilisateur par ID")
     void shouldReturnUserById() {
-        // GIVEN
+
         User user = new User();
         user.setId(1);
 
         when(userRepository.findById(1))
                 .thenReturn(Optional.of(user));
 
-        // WHEN
         Optional<User> result = userService.getUser(1);
 
-        // THEN
         assertTrue(result.isPresent());
         assertEquals(1, result.get().getId());
     }
 
     @Test
+    @Story("Consultation utilisateur")
+    @Severity(SeverityLevel.MINOR)
+    @Description("Retourne la liste complète des utilisateurs")
+    @DisplayName("Récupération de tous les utilisateurs")
     void shouldReturnAllUsers() {
-        // GIVEN
+
         User user1 = new User();
         user1.setId(1);
         User user2 = new User();
@@ -112,21 +128,23 @@ class UserServiceTest {
         when(userRepository.findAll())
                 .thenReturn(java.util.List.of(user1, user2));
 
-        // WHEN
         Iterable<User> users = userService.getUser();
 
-        // THEN
         int count = 0;
         for (User u : users) count++;
+
         assertEquals(2, count);
     }
 
     @Test
+    @Story("Suppression utilisateur")
+    @Severity(SeverityLevel.CRITICAL)
+    @Description("Supprime un utilisateur via son ID")
+    @DisplayName("Suppression utilisateur par ID")
     void shouldDeleteUserById() {
-        // WHEN
+
         userService.deleteUser(1);
 
-        // THEN
         verify(userRepository).deleteById(1);
     }
 }

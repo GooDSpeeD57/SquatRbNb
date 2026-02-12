@@ -149,9 +149,19 @@ jobs:
       - name: Build final package
         run: mvn clean package -DskipTests
 
+      - name: Deploy_Allure_Report_to_GitHub_Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+            github_token: ${{ secrets.PERSONAL_TOKEN_ALLURE }}
+            publish_dir: target/site/allure-maven-plugin
+            destination_dir: allure-report
+            keep_files : false
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
+
           name: api.jar
           path: target/*.jar
           retention-days: 1
@@ -197,4 +207,3 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USER }}/apispringboottest:latest
-
