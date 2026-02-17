@@ -4,7 +4,7 @@ LABEL maintainer="stagiaire@devops-afpa.fr"
 
 WORKDIR /app
 
-COPY api.jar app.jar
+COPY target/*.jar app.jar
 
 EXPOSE 8080
 
